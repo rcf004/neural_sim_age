@@ -1,28 +1,20 @@
 #%%
+import os
 import numpy as np
 from scipy import stats
 import pandas as pd
-from statsmodels.stats.anova import anova_lm
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import fdrcorrection
-import pingouin as pg
 
 import matplotlib.pyplot as plt
 
 plt.rcParams['svg.fonttype'] = 'none'
-
-import seaborn as sns
-
-
-#%%
-import os
+plt.rcParams.update({'font.size': 12})
 
 from nilearn import surface
 from nilearn import plotting
 from nilearn import datasets
 from nilearn.surface import SurfaceImage
-from matplotlib import colors as mcolors
-from matplotlib.lines import Line2D
 
 #%%
 
@@ -33,8 +25,9 @@ def plot_surf(axis_avg, contour_bin, model_name, contour_col = 'g', nilearn_kwar
     contour_bin_l = contour_bin[:100]
     contour_bin_r = contour_bin[100:]
 
-    # this needs to point to local copy of freesurfer schaefer parcellation
-    bdir = '/home/roberto/Documents/Work/projects/ISC/data/freesurfer_parcs/FreeSurfer5.3'
+    # this needs to point to local copy of freesurfer schaefer parcellation - get all 3 for different mesh qualities.
+    # found here: https://github.com/ThomasYeoLab/CBIG/tree/master/stable_projects/brain_parcellation/Schaefer2018_LocalGlobal/Parcellations/FreeSurfer5.3
+    bdir = '/local/path/to/schaefer/freesurfer/parcellation/FreeSurfer5.3'
     
     if mesh_qual.lower() == 'high':
         fs = 'fsaverage'
@@ -43,7 +36,7 @@ def plot_surf(axis_avg, contour_bin, model_name, contour_col = 'g', nilearn_kwar
     elif mesh_qual.lower() == 'low':
         fs = 'fsaverage5'
     else:
-        raise ValueError('`mesh_qual` must be "high" or "low"')
+        raise ValueError('`mesh_qual` must be "high", "med", or "low"')
 
     schaefer_l_lab = surface.load_surf_data(f'{bdir}/{fs}/label/lh.Schaefer2018_200Parcels_17Networks_order.annot')
     schaefer_r_lab = surface.load_surf_data(f'{bdir}/{fs}/label/rh.Schaefer2018_200Parcels_17Networks_order.annot')
@@ -125,20 +118,7 @@ def plot_surf(axis_avg, contour_bin, model_name, contour_col = 'g', nilearn_kwar
                         output_file=f'{outd}/{model_name}_{view}_{hemi}_contour_{mesh_qual}Q.png',
                     )
             
-#TODO create subcortex plotting - use glass brain
-# def plot_subcort(axis_avg, contour_bin, model_name, contour_col = 'g'):
-#     # generate nii object of subcortical tian parcellation
-#     # load in tian parcellation
-#     # load in tian labels
-#     # iterate through labels- replace with axis_avg value
-#     # use nilearn.plotting to plot
-#     # iterate through contour_bin
-#     # generate contour - how? need slice
-
-#%% parcelwise analyses H2A
-
 class ParcelwiseModel:
-    # notes to self:
     # ensure parceldf and modeldf have 'SubID' column
     # ensure first row is 'Younger' AgeGroup
 
@@ -279,71 +259,13 @@ class ParcelwiseModel:
 #%%
 
 # read in all beh docs
-movement = pd.read_csv('~/Documents/Work/projects/ISC/data/full_sublist_movement-0.5_threshold.csv')
-other_beh = pd.read_csv('~/Documents/Work/projects/ISC/data/forMRIanalysis_02-05-25.csv')
-
-PC = pd.read_csv('~/Documents/Work/projects/ISC/data/full_sample_PC.csv', index_col=0)
-
-awk_sim = pd.read_csv('~/Documents/Work/projects/ISC/data/awk_sim_score_LOO_version.csv')
-
-#%%
-
-beh_keep = [
-    'age',
-    'AgeGroup',
-    'NFY_control',
-    'NFY_emotion',
-    'NFY_belief',
-    'NFY_motivation',
-    'NFY_fauxpas',
-    'NFY_deception',
-    'NFY_total',
-    'awk_sim',
-    'awk_sim_LOO',
-    ]
-
-move_keep = ['meanFD']
-uds_keep = ['UDS_execfxn', 'UDS_epmem']
-oa_uds_keep = ['UDS_OA_execfxn', 'UDS_OA_epmem']
-ya_uds_keep = ['UDS_YA_execfxn', 'UDS_YA_epmem']
-
-#%%
-
-movement['subID'] = [f'sub-{int(i.split('-')[1])}' for i in movement['subj']]
-other_beh['subID'] = [f'sub-{i}' for i in other_beh['IDnum']]
-awk_sim['subID'] = [f'sub-{i}' for i in awk_sim['SUBID']]
-
-# allsub
-full_df = other_beh.merge(movement, on='subID', how='inner')
-full_df = full_df.merge(PC, on='subID', how='inner')
-full_df = full_df.merge(awk_sim, on='subID', how='left')
-
-
-#trim
-fullkeep = ['subID'] + beh_keep + move_keep + uds_keep + oa_uds_keep + ya_uds_keep + ['PC1']
-full_df = full_df[fullkeep]
-full_df['NFY_mean'] = full_df[['NFY_emotion', 'NFY_belief', 'NFY_motivation', 'NFY_fauxpas', 'NFY_deception']].mean(axis=1)
-
-
-non_outlier_full_df = full_df[full_df['subID'] != 'sub-1321']
-
-#%% generate plots first
-
-plt.rcParams.update({'font.size': 12})
-
-outlier_ver=False
-
-if outlier_ver:
-    plot_df = non_outlier_full_df
-else:
-    plot_df = full_df
-
+behavioral_data = pd.read_csv('./input_data/full_behavioral_data_public.csv')
 
 
 #%% load in parcel ISC
 
 # load in parcel isc data
-parcel_isc = pd.read_csv('~/Documents/Work/projects/ISC/data/temp_move/full_roi_ISC_values.csv')
+parcel_isc = pd.read_csv('./input_data/full_roi_ISC_values.csv')
 
 # rename first column to subID
 parcel_isc = parcel_isc.rename(columns={parcel_isc.columns[0]: 'subID'})
@@ -355,16 +277,10 @@ for parcel in parcel_isc.columns[1:]:
     parcel_isc[parcel] = np.arctanh(parcel_isc[parcel])
 
 
-
-#%% find missing subjects between parcel_isc df and plot_df
-
-missing_subs = set(parcel_isc['subID']) - set(plot_df['subID'])
-print(f'Missing subjects: {missing_subs}') 
-
 #%% H2A
 
-# run orig parcel model
-awk_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=plot_df)
+# run behavioral awkwardness similarity model (H2A)
+awk_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=behavioral_data)
 
 init_model_terms = ['awk_sim_LOO', 'C(AgeGroup)', 'awk_sim_LOO:C(AgeGroup)', 'meanFD']
 awk_model.runModel(model_terms = init_model_terms)
@@ -374,38 +290,13 @@ awk_model.getSigParcels()
 
 awk_results_df = awk_model.reportParcels(terms=['awk_sim_LOO'])
 
-#%% plot
-#TODO need to find a way of displaying subcortical on the surface.
-#TODO check if contour border can be made thicker- maybe only solution is to use lower quality mesh? maybe dind different contour color for clarity
-#TODO create colormap with hot on positive and cool on negative, leave as symmetric cmap
-
-{'cmap':'hot', 'threshold':0.0001}
 contour_col = np.array((34, 255, 0))/255
-# awk_model.plotSurface('awk_sim_LOO', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
+awk_model.plotSurface('awk_sim_LOO', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
 
 
-#%% run second model with TOM (full version) all parcels (once with nfy control and once without])
+#%% run second model with TOM (H2B)
 
-tom_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=plot_df)
-
-init_model_terms = ['NFY_mean', 'C(AgeGroup)', 'NFY_mean:C(AgeGroup)', 'meanFD']
-tom_model.runModel(model_terms = init_model_terms)
-
-tom_model.fdrCorrect()
-tom_model.getSigParcels()
-
-tom_results_df = tom_model.reportParcels(terms='NFY_mean')
-
-
-
-
-#%%
-
-# tom_model.plotSurface('NFY_mean', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
-
-#%%
-
-tom_con_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=plot_df)
+tom_con_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=behavioral_data)
 
 init_model_terms = ['NFY_mean', 'C(AgeGroup)', 'NFY_mean:C(AgeGroup)', 'NFY_control', 'meanFD']
 tom_con_model.runModel(model_terms = init_model_terms)
@@ -415,209 +306,51 @@ tom_con_model.getSigParcels()
 
 tom_results_con_df = tom_con_model.reportParcels(terms='NFY_mean')
 
-#%% get the full set of t stats from each of the 216 parcels 
+tom_con_model.plotSurface('NFY_mean', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
+
+# correlation between output t statistics for both H2A and H2B models
 r, p = stats.pearsonr(awk_model.modelterm_output['awk_sim_LOO_t'],
                       tom_con_model.modelterm_output['NFY_mean_t'])
 
+
+#%% Supplemental analyses
+
+tom_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=behavioral_data)
+
+init_model_terms = ['NFY_mean', 'C(AgeGroup)', 'NFY_mean:C(AgeGroup)', 'meanFD']
+tom_model.runModel(model_terms = init_model_terms)
+
+tom_model.fdrCorrect()
+tom_model.getSigParcels()
+
+tom_results_df = tom_model.reportParcels(terms='NFY_mean')
+
+tom_model.plotSurface('NFY_mean', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
 
 #%% get the full set of t stats from each of the 216 parcels 
 r_sup, p_sup = stats.pearsonr(awk_model.modelterm_output['awk_sim_LOO_t'],
                               tom_model.modelterm_output['NFY_mean_t'])
 
-#%%
 
-# tom_con_model.plotSurface('NFY_mean', {'threshold':0.0001}, contour_col=contour_col, sym_cbar=True, mesh_qual='high')
+#%% save output
 
-#%% save everything
+awk_results_df.to_csv('./output_results/awk_results.csv', index=False)
+tom_results_con_df.to_csv('./output_results/tom_con_results.csv', index=False)
+tom_results_df.to_csv('./output_results/tom_results.csv', index=False)
 
-awk_results_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/awk_results.csv', index=False)
-tom_results_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/tom_results.csv', index=False)
-tom_results_con_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/tom_con_results.csv', index=False)
+#%% Behavioral replication analsyses
 
-
-#%%############################################################################################################################
-
-
-# create a scatter of all subjects for all significant parcels
-# pull sig parcels - filter df (.mergedf) - need only awk(or nfy mean), sig parcels (maybe long format to hue parcels? maybe messy), and age group!
-# make a nice scatter plot - may be dealing with issues surrounding rasterization of all these points
-
-# plt.gca().set_rasterization_zorder(1)
-# plt.plot(randn(100),randn(100,500),"k",alpha=0.03,zorder=0)
-# plt.savefig("test.pdf",dpi=90)
-
-# decide on fit line after the fact- probably not, introduces stats that I would need to explain, unless the figure looks really bad. 
-# this is just a visualization to help understand the pattern
-
-awk_plot_df = awk_model.mergedf[awk_model.sigparcels['awk_sim_LOO']+['awk_sim_LOO', 'AgeGroup']]
-tom_plot_df = tom_model.mergedf[tom_model.sigparcels['NFY_mean']+['NFY_mean', 'AgeGroup']]
-tom_plot_con_df = tom_con_model.mergedf[tom_con_model.sigparcels['NFY_mean']+['NFY_mean', 'AgeGroup']]
-
-
-#%%
-
-awk_plot_df_melted = pd.melt(awk_plot_df,
-                             id_vars=['AgeGroup', 'awk_sim_LOO'],
-                             var_name='Parcel',
-                             value_name='ISC_value')
-
-tom_plot_df_melted = pd.melt(tom_plot_df,
-                             id_vars=['AgeGroup', 'NFY_mean'],
-                             var_name='Parcel',
-                             value_name='ISC_value')
-
-tom_plot_con_df_melted = pd.melt(tom_plot_con_df,
-                             id_vars=['AgeGroup', 'NFY_mean'],
-                             var_name='Parcel',
-                             value_name='ISC_value')
-
-
-
-#%%
-# find overlap of sig parcels
-
-awk_sig_parcels = set(awk_plot_df_melted['Parcel'])
-tom_sig_parcels = set(tom_plot_df_melted['Parcel'])
-
-overlap_parcels = awk_sig_parcels.intersection(tom_sig_parcels)
-
-# find unique parcels for awk
-
-awk_unique_parcels = awk_sig_parcels - tom_sig_parcels
-
-#%%
-# run linear models of the 5 rois for both awk and TOM
-
-ment_roi = pd.read_csv('~/Documents/Work/projects/ISC/data/ment_roi_ISC_vals.csv', index_col=0)
-ment_roi = ment_roi[list(ment_roi.columns[:7]) + ['subID']]
-roi_relabel = ['dmPFC', 'rTPJ', 'l_temppole', 'precuneus', 'lTPJ', 'r_temppole', 'vmPFC']
-roi_test = ['dmPFC', 'vmPFC', 'rTPJ', 'lTPJ', 'precuneus']
-ment_roi.columns = roi_relabel + ['subID']
-
-roi_df = ment_roi[['subID'] + roi_test]
-
-for roi in roi_df.columns[1:]:
-    roi_df[roi] = np.arctanh(roi_df[roi])
-
-#%% run "parcelwise models" but only on the 5 rois
-awk_roi_model = ParcelwiseModel(parceldf=roi_df, modeldf=plot_df)
-init_model_terms = ['awk_sim_LOO', 'C(AgeGroup)', 'awk_sim_LOO:C(AgeGroup)', 'meanFD']
-awk_roi_model.runModel(model_terms = init_model_terms)
-awk_roi_model.fdrCorrect()
-awk_roi_model.getSigParcels()
-
-awk_roi_results_df = awk_roi_model.reportFull()
-
-
-#%% do the same as above but for TOM
-
-tom_roi_model = ParcelwiseModel(parceldf=roi_df, modeldf=plot_df)
-init_model_terms = ['NFY_mean', 'C(AgeGroup)', 'NFY_mean:C(AgeGroup)', 'meanFD']
-tom_roi_model.runModel(model_terms = init_model_terms)
-tom_roi_model.fdrCorrect()
-tom_roi_model.getSigParcels()
-
-tom_roi_results_df = tom_roi_model.reportFull()
-
-
-tom_roi_con_model = ParcelwiseModel(parceldf=roi_df, modeldf=plot_df)
-init_model_terms = ['NFY_mean', 'C(AgeGroup)', 'NFY_mean:C(AgeGroup)', 'NFY_control', 'meanFD']
-tom_roi_con_model.runModel(model_terms = init_model_terms)
-tom_roi_con_model.fdrCorrect()
-tom_roi_con_model.getSigParcels()
-
-tom_roi_con_results_df = tom_roi_con_model.reportFull()
-
-#%%
-# cog_model = ParcelwiseModel(parceldf=parcel_isc, modeldf=plot_df)
-# init_model_terms = ['UDS_execfxn', 'UDS_epmem', 'C(AgeGroup)', 'meanFD']
-# cog_model.runModel(model_terms = init_model_terms)
-# cog_model.fdrCorrect()
-# cog_model.getSigParcels()
-
-# cog_results_df = cog_model.reportParcels(terms=['UDS_execfxn', 'UDS_epmem'])
-
-# %%
-
-awk_roi_results_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/awk_roi_results.csv', index=False)
-tom_roi_results_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/tom_roi_results.csv', index=False)
-tom_roi_con_results_df.to_csv('~/Documents/Work/projects/ISC/data/1-5-26_results/tom_roi_con_results.csv', index=False)
-
-# %%
-
-# for the 5 ROIs, run regression to residualise the effects of meanFD from awk_sim_LOO,
-# then plot a regplot of the residuals against the region similarity hue by AgeGroup
-
-# use the merged dataframe from the ROI parcelwise model (contains awk_sim_LOO, meanFD, AgeGroup, and ROI values)
-merged_roi = awk_roi_model.mergedf.copy()
-
-# regress awk_sim_LOO on meanFD and keep residuals
-fd_model = smf.ols('awk_sim_LOO ~ meanFD', data=merged_roi).fit()
-merged_roi['awk_sim_LOO_resid'] = fd_model.resid
-
-
-# create output directory for ROI regplots
-outdir = 'figs/roi_regplots'
-if not os.path.exists(outdir):
-    os.makedirs(outdir)
-
-# define a pastel palette that switches colors between Older and Younger explicitly
-# (maps 'Younger' -> light pastel orange, 'Older' -> light pastel blue). Falls back to a pastel palette if names differ.
-ya_col = "#e7833f"  # light pastel orange
-oa_col = "#3074db"    # light pastel blue
-
-palette = {'Younger': ya_col, 'Older': oa_col}
-
-# Generate a regplot per ROI. Use seaborn.lmplot which supports hue (AgeGroup) and per-hue regression lines.
-for roi in roi_test:
-    plot_df_roi = merged_roi[['awk_sim_LOO_resid', roi, 'AgeGroup']].dropna()
-
-    # seaborn.lmplot creates its own figure; set aesthetics and save each plot
-    g = sns.lmplot(x='awk_sim_LOO_resid', y=roi, hue='AgeGroup', data=plot_df_roi,
-                   height=5, aspect=1.2, scatter_kws={'alpha':0.8, 's':30, 'edgecolor':'w'},
-                   palette=palette)
-    g.set_axis_labels('Beh. Similarity (residualised for meanFD)', f'{roi} ISC (Fisher z)')
-    plt.subplots_adjust(top=0.9)
-    g.fig.suptitle(f'Beh. Similarity vs {roi} ISC by AgeGroup')
-
-    fname = f"{outdir}/{roi}_beh_similarity_resid_vs_{roi}_by_AgeGroup.svg"
-    plt.savefig(fname)
-    plt.show()
-
-#%% same as above but for TOM, also residualize out NFY_con as well as meanFD
-
-# regress awk_sim_LOO_resid on NFY_con and keep residuals
-fd_model = smf.ols('NFY_mean ~ meanFD + NFY_control', data=merged_roi).fit()
-merged_roi['NFY_mean_resid'] = fd_model.resid
-
-# Generate a regplot per ROI. Use seaborn.lmplot which supports hue (AgeGroup) and per-hue regression lines.
-for roi in roi_test:
-    plot_df_roi = merged_roi[['NFY_mean_resid', roi, 'AgeGroup']].dropna()
-
-    # seaborn.lmplot creates its own figure; set aesthetics and save each plot
-    g = sns.lmplot(x='NFY_mean_resid', y=roi, hue='AgeGroup', data=plot_df_roi,
-                   height=5, aspect=1.2, scatter_kws={'alpha':0.8, 's':30, 'edgecolor':'w'},
-                   palette=palette)
-    g.set_axis_labels('Theory of mind (residualised for meanFD and control Q.)', f'{roi} ISC (Fisher z)')
-    plt.subplots_adjust(top=0.9)
-    g.fig.suptitle(f'Theory of mind vs {roi} ISC by AgeGroup')
-
-    fname = f"{outdir}/{roi}_Theory_of_mind_resid_vs_{roi}_by_AgeGroup.svg"
-    plt.savefig(fname)
-
-# %% run t test to look at age group differences in awkwardness similarity and theory of mind
-
-awkwardness_results = full_df[['awk_sim_LOO', 'AgeGroup']].dropna()
-tom_results = full_df[['NFY_mean', 'AgeGroup']].dropna()
+awkwardness_results = behavioral_data[['awk_sim_LOO', 'AgeGroup']].dropna()
+tom_results = behavioral_data[['NFY_mean', 'AgeGroup']].dropna()
 
 # run t-tests
 awkwardness_ttest = stats.ttest_ind(awkwardness_results[awkwardness_results['AgeGroup'] == 'Younger']['awk_sim_LOO'],
-                                     awkwardness_results[awkwardness_results['AgeGroup'] == 'Older']['awk_sim_LOO'],
-                                     equal_var=False)
+                                    awkwardness_results[awkwardness_results['AgeGroup'] == 'Older']['awk_sim_LOO'],
+                                    equal_var=False)
 
 tom_ttest = stats.ttest_ind(tom_results[tom_results['AgeGroup'] == 'Younger']['NFY_mean'],
-                             tom_results[tom_results['AgeGroup'] == 'Older']['NFY_mean'],
-                             equal_var=False)
+                            tom_results[tom_results['AgeGroup'] == 'Older']['NFY_mean'],
+                            equal_var=False)
 
 # %% print t-test results to only 2decimal
 
@@ -638,13 +371,12 @@ print(tom_results.groupby('AgeGroup').agg(['mean', 'std']))
 # %%
 # run age t test on framewise displacement
 
-fd_results = full_df[['meanFD', 'AgeGroup']].dropna()
+fd_results = behavioral_data[['meanFD', 'AgeGroup']].dropna()
 
 # run t-tests
 fd_ttest = stats.ttest_ind(fd_results[fd_results['AgeGroup'] == 'Younger']['meanFD'],
-                            fd_results[fd_results['AgeGroup'] == 'Older']['meanFD'],
-                            equal_var=False)
-
+                           fd_results[fd_results['AgeGroup'] == 'Older']['meanFD'],
+                           equal_var=False)
 
 print("\nmeanFD by Age Group:")
 print(fd_results.groupby('AgeGroup').agg(['mean', 'std']))
