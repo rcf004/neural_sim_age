@@ -1,4 +1,4 @@
-# Reproducing Analyses for [Manuscript Title]
+# Reproducing Analyses for [Neural similarity when viewing social interactions differs by age and relates to social behavior]
 
 This repository contains code to reproduce the primary analyses reported in the manuscript.
 
