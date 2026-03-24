@@ -333,6 +333,8 @@ r_sup, p_sup = stats.pearsonr(awk_model.modelterm_output['awk_sim_LOO_t'],
 
 
 #%% save output
+if not os.path.exists('./output_results'):
+    os.makedirs('./output_results')
 
 awk_results_df.to_csv('./output_results/awk_results.csv', index=False)
 tom_results_con_df.to_csv('./output_results/tom_con_results.csv', index=False)
