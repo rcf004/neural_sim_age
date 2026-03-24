@@ -1,4 +1,4 @@
-name: pyfmri
+name: neural_sim
 channels:
   - brainiak
   - conda-forge
