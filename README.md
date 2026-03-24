@@ -1,4 +1,4 @@
-# Reproducing Analyses for [Neural similarity when viewing social interactions differs by age and relates to social behavior]
+# Reproducing Analyses for: Neural similarity when viewing social interactions differs by age and relates to social behavior
 
 This repository contains code to reproduce the primary analyses reported in the manuscript.
 
@@ -18,7 +18,7 @@ This repository includes code for two main analyses:
 
 * Script: `ISC_permutation/ISC_group_perm.py`
 * Description:
-  Performs group-level permutation testing on intersubject correlation (ISC) maps to assess statistical significance across participants.
+  Performs group-level permutation testing on intersubject correlation (ISC) maps to assess statistical significance between age groups.
 
 ### 2. Brain–Behavior Modeling
 
@@ -58,6 +58,9 @@ python ISC_permutation/ISC_group_perm.py
 ```
 
 Additional scripts for brain–behavior modeling can be run similarly.
+```bash
+python behavioral_modeling/ISC_behavioral_models.py
+```
 
 ---
 
